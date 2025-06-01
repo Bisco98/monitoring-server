@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -8,10 +9,47 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { getRecentData } from "./data";
+import { ref, onValue } from "firebase/database";
+import { database } from "@/config/firebase";
 
 export default function Graph() {
-  const chartData = getRecentData(10);
+  const [chartData, setChartData] = useState([]);
+
+  useEffect(() => {
+    const historyRef = ref(database, "riwayat");
+
+    const unsubscribe = onValue(historyRef, (snapshot) => {
+      const data = [];
+      snapshot.forEach((dateSnapshot) => {
+        const date = dateSnapshot.key;
+        dateSnapshot.forEach((timeSnapshot) => {
+          const time = timeSnapshot.key;
+          const record = timeSnapshot.val();
+          if (record) {
+            data.push({
+              time: time,
+              date: date,
+              temperature: Number(record.suhu) || 0,
+              humidity: Number(record.kelembapan) || 0,
+              smoke: Number(record.gas) || 0,
+              // Buat timestamp untuk sorting
+              timestamp: new Date(`${date} ${time}`).getTime(),
+            });
+          }
+        });
+      });
+
+      // Sort dan ambil 10 data terakhir
+      const sortedData = data
+        .sort((a, b) => b.timestamp - a.timestamp)
+        .slice(0, 10)
+        .reverse();
+
+      setChartData(sortedData);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   return (
     <div className="px-4 space-y-4">
@@ -24,13 +62,9 @@ export default function Graph() {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="time"
-                tick={{ fontSize: 10 }}
-                className="text-xs"
-              />
-              <YAxis tick={{ fontSize: 10 }} className="text-xs" />
-              <Tooltip contentStyle={{ fontSize: "12px" }} />
+              <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip />
               <Line
                 type="monotone"
                 dataKey="temperature"
@@ -52,13 +86,9 @@ export default function Graph() {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="time"
-                tick={{ fontSize: 10 }}
-                className="text-xs"
-              />
-              <YAxis tick={{ fontSize: 10 }} className="text-xs" />
-              <Tooltip contentStyle={{ fontSize: "12px" }} />
+              <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip />
               <Line
                 type="monotone"
                 dataKey="humidity"
@@ -80,13 +110,9 @@ export default function Graph() {
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={chartData}>
               <CartesianGrid strokeDasharray="3 3" />
-              <XAxis
-                dataKey="time"
-                tick={{ fontSize: 10 }}
-                className="text-xs"
-              />
-              <YAxis tick={{ fontSize: 10 }} className="text-xs" />
-              <Tooltip contentStyle={{ fontSize: "12px" }} />
+              <XAxis dataKey="time" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip />
               <Line
                 type="monotone"
                 dataKey="smoke"

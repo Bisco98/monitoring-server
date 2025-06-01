@@ -1,23 +1,44 @@
 "use client";
-import { getAllData } from "./data";
+import { useState, useEffect } from "react";
+import { ref, onValue } from "firebase/database";
+import { database } from "@/config/firebase";
 
 export default function Table() {
-  const historicalData = getAllData();
+  const [historicalData, setHistoricalData] = useState([]);
 
-  const formatDateTime = (timestamp) => {
-    if (!timestamp) return "N/A";
-    try {
-      const date = new Date(timestamp);
-      return date.toLocaleString("id-ID", {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
+  useEffect(() => {
+    const historyRef = ref(database, "riwayat");
+
+    const unsubscribe = onValue(historyRef, (snapshot) => {
+      const data = [];
+      snapshot.forEach((dateSnapshot) => {
+        const date = dateSnapshot.key;
+        dateSnapshot.forEach((timeSnapshot) => {
+          const time = timeSnapshot.key;
+          const record = timeSnapshot.val();
+          if (record) {
+            data.push({
+              id: `${date}-${time}`,
+              displayTime: `${date} ${time}`,
+              temperature: Number(record.suhu) || 0,
+              humidity: Number(record.kelembapan) || 0,
+              smoke: Number(record.gas) || 0,
+              timestamp: new Date(`${date} ${time}`).getTime(),
+            });
+          }
+        });
       });
-    } catch {
-      return timestamp;
-    }
+
+      // Sort dari yang terbaru
+      const sortedData = data.sort((a, b) => b.timestamp - a.timestamp);
+      setHistoricalData(sortedData);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const formatDateTime = (displayTime) => {
+    return displayTime || "N/A";
   };
 
   return (
@@ -45,7 +66,7 @@ export default function Table() {
               {historicalData.map((item, index) => (
                 <tr key={item.id || index} className="hover:bg-gray-50">
                   <td className="px-1 md:px-4 py-1 md:py-3 whitespace-nowrap text-xs md:text-sm text-gray-900">
-                    {formatDateTime(item.timestamp)}
+                    {formatDateTime(item.displayTime)}
                   </td>
                   <td className="px-1 md:px-4 py-1 md:py-3 whitespace-nowrap text-xs md:text-sm">
                     <span
