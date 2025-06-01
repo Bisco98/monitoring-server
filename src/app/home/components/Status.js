@@ -63,11 +63,10 @@ export default function Status({ sensorData, config }) {
       case "berbahaya":
         return "text-red-600 bg-red-50 border-red-200";
       case "peringatan":
-        return "text-yellow-600 bg-yellow-50 border-yellow-200";
       case "normal":
         return "text-green-600 bg-green-50 border-green-200";
       default:
-        return "text-gray-600 bg-gray-50 border-gray-200";
+        return "text-green-600 bg-green-50 border-green-200";
     }
   };
 
@@ -75,12 +74,10 @@ export default function Status({ sensorData, config }) {
     switch (currentStatus) {
       case "berbahaya":
         return "BERBAHAYA";
-      case "peringatan":
-        return "PERINGATAN";
-      case "normal":
-        return "NORMAL";
+      case "aman":
+        return "AMAN";
       default:
-        return "TIDAK DIKETAHUI";
+        return "AMAN";
     }
   };
 
