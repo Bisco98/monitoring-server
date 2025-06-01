@@ -1,7 +1,7 @@
 import React from "react";
 import { Thermometer, Droplets, Cloud } from "lucide-react";
 
-export default function Card({ dataType = "temperature", sensorData }) {
+export default function Card({ dataType = "temperature", sensorData, config }) {
   const sensorConfigs = {
     temperature: {
       title: "Temperature",
@@ -10,8 +10,6 @@ export default function Card({ dataType = "temperature", sensorData }) {
       decimals: 1,
       icon: Thermometer,
       gradient: "from-red-500 to-red-600",
-      thresholds: [25, 28],
-      statusLabels: ["Rendah", "Normal", "Tinggi"],
     },
     humidity: {
       title: "Humidity",
@@ -20,8 +18,6 @@ export default function Card({ dataType = "temperature", sensorData }) {
       decimals: 1,
       icon: Droplets,
       gradient: "from-blue-500 to-blue-600",
-      thresholds: [60, 70],
-      statusLabels: ["Rendah", "Normal", "Tinggi"],
     },
     smoke: {
       title: "Gas Level",
@@ -30,30 +26,32 @@ export default function Card({ dataType = "temperature", sensorData }) {
       decimals: 0,
       icon: Cloud,
       gradient: "from-yellow-500 to-yellow-600",
-      thresholds: [30, 50],
-      statusLabels: ["Aman", "Waspada", "Bahaya"],
     },
   };
 
   const getDataConfig = (type) => {
-    const config = sensorConfigs[type] || sensorConfigs.temperature;
-    const value = sensorData[config.dataKey];
-    const statusColors = ["text-green-500", "text-yellow-500", "text-red-500"];
+    const sensorConfig = sensorConfigs[type] || sensorConfigs.temperature;
+    const value = sensorData[sensorConfig.dataKey];
+    const statusColors = ["text-green-500", "text-red-500"]; // Only 2 colors: safe and danger
 
+    // Use Firebase config thresholds and labels directly
+    const firebaseThreshold = config[type]?.thresholds || 0;
+    const firebaseLabels = config[type]?.statusLabels || ["Aman", "Bahaya"];
+
+    // Simple logic: below or above threshold
     let statusIndex = 0;
-    if (value > config.thresholds[1]) statusIndex = 2;
-    else if (value > config.thresholds[0]) statusIndex = 1;
+    if (value > firebaseThreshold) statusIndex = 1; // Above threshold = danger
 
     return {
-      ...config,
-      value: `${value.toFixed(config.decimals)}${config.unit}`,
-      status: config.statusLabels[statusIndex],
+      ...sensorConfig,
+      value: `${value.toFixed(sensorConfig.decimals)}${sensorConfig.unit}`,
+      status: firebaseLabels[statusIndex],
       statusColor: statusColors[statusIndex],
     };
   };
 
-  const config = getDataConfig(dataType);
-  const IconComponent = config.icon;
+  const cardConfig = getDataConfig(dataType);
+  const IconComponent = cardConfig.icon;
 
   return (
     <div className="w-full">
@@ -61,7 +59,7 @@ export default function Card({ dataType = "temperature", sensorData }) {
         {/* Mobile Layout - Icon on top */}
         <div className="block md:hidden">
           <div
-            className={`bg-gradient-to-r ${config.gradient} p-2 text-white flex justify-center`}
+            className={`bg-gradient-to-r ${cardConfig.gradient} p-2 text-white flex justify-center`}
           >
             <div className="bg-white/20 p-2 rounded-full">
               <IconComponent size={20} className="text-white" />
@@ -69,13 +67,13 @@ export default function Card({ dataType = "temperature", sensorData }) {
           </div>
           <div className="p-2 text-center">
             <h2 className="text-xs font-medium text-gray-500">
-              {config.title}
+              {cardConfig.title}
             </h2>
             <p className="text-sm font-bold text-gray-800 mt-1">
-              {config.value}
+              {cardConfig.value}
             </p>
-            <p className={`text-xs mt-1 ${config.statusColor}`}>
-              {config.status}
+            <p className={`text-xs mt-1 ${cardConfig.statusColor}`}>
+              {cardConfig.status}
             </p>
           </div>
         </div>
@@ -83,7 +81,7 @@ export default function Card({ dataType = "temperature", sensorData }) {
         {/* Desktop Layout - Icon on side */}
         <div className="hidden md:flex items-stretch">
           <div
-            className={`bg-gradient-to-r ${config.gradient} p-4 text-white flex items-center`}
+            className={`bg-gradient-to-r ${cardConfig.gradient} p-4 text-white flex items-center`}
           >
             <div className="bg-white/20 p-3 rounded-full">
               <IconComponent size={24} className="text-white" />
@@ -91,13 +89,13 @@ export default function Card({ dataType = "temperature", sensorData }) {
           </div>
           <div className="flex-1 p-4">
             <h2 className="text-sm font-medium text-gray-500">
-              {config.title}
+              {cardConfig.title}
             </h2>
             <p className="text-2xl font-bold text-gray-800 mt-1">
-              {config.value}
+              {cardConfig.value}
             </p>
-            <p className={`text-xs mt-1 ${config.statusColor}`}>
-              {config.status}
+            <p className={`text-xs mt-1 ${cardConfig.statusColor}`}>
+              {cardConfig.status}
             </p>
           </div>
         </div>

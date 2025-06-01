@@ -1,11 +1,12 @@
 "use client";
 import { useState, useEffect } from "react";
-import { TrendingUp, Table } from "lucide-react";
+import { TrendingUp, Table, Shield } from "lucide-react";
 import { ref, onValue } from "firebase/database";
 import { database } from "@/config/firebase";
 import Card from "./components/Card";
 import Graph from "./components/Graph";
 import TableComponent from "./components/Table";
+import Status from "./components/Status";
 
 export default function HomePage() {
   const [sensorData, setSensorData] = useState({
@@ -13,12 +14,27 @@ export default function HomePage() {
     humidity: 0,
     smoke: 0,
   });
+  const [config, setConfig] = useState({
+    temperature: {
+      thresholds: 0,
+      statusLabels: [],
+    },
+    humidity: {
+      thresholds: 0,
+      statusLabels: [],
+    },
+    smoke: {
+      thresholds: 0,
+      statusLabels: [],
+    },
+  });
 
-  const [activeTab, setActiveTab] = useState("graph"); // current, graph, table
+  const [activeTab, setActiveTab] = useState("graph"); // graph, table, status
 
   useEffect(() => {
-    const dbRef = ref(database, "terkini"); // sesuaikan dengan path di Firebase
-    const unsubscribe = onValue(dbRef, (snapshot) => {
+    // Status
+    const statusRef = ref(database, "terkini"); // sesuaikan dengan path di Firebase
+    const unsubscribe = onValue(statusRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
         setSensorData({
@@ -29,15 +45,49 @@ export default function HomePage() {
       }
     });
 
-    return () => unsubscribe();
+    // Config
+    const configRef = ref(database, "pengaturan");
+    const unsubscribeConfig = onValue(configRef, (snapshot) => {
+      const configData = snapshot.val();
+      console.log(configData, "config data");
+
+      setConfig({
+        temperature: {
+          thresholds: configData?.suhu?.thresholds || 30,
+          statusLabels: configData?.suhu?.status || ["Aman", "Bahaya"],
+        },
+        humidity: {
+          thresholds: configData?.kelembapan?.thresholds || 110,
+          statusLabels: configData?.kelembapan?.status || ["Aman", "Bahaya"],
+        },
+        smoke: {
+          thresholds: configData?.gas?.thresholds || 150,
+          statusLabels: configData?.gas?.status || ["Aman", "Bahaya"],
+        },
+      });
+    });
+
+    return () => {
+      unsubscribe();
+      unsubscribeConfig();
+    };
   }, []);
+
+  useEffect(() => {
+    console.log(config, "masuk config");
+  }, [config]);
 
   return (
     <div className="min-h-screen bg-gray-100 mx-auto">
       {/* Fixed Cards at top */}
       <div className="p-4 w-full grid grid-cols-3 gap-2 md:gap-4">
         {["temperature", "humidity", "smoke"].map((item) => (
-          <Card key={item} dataType={item} sensorData={sensorData} />
+          <Card
+            key={item}
+            dataType={item}
+            sensorData={sensorData}
+            config={config}
+          />
         ))}
       </div>
 
@@ -45,6 +95,9 @@ export default function HomePage() {
       <div className="h-[calc(100vh-240px)] md:h-[calc(100vh-220px)] overflow-y-auto bg-gray-100">
         {activeTab === "graph" && <Graph />}
         {activeTab === "table" && <TableComponent />}
+        {activeTab === "status" && (
+          <Status sensorData={sensorData} config={config} />
+        )}
       </div>
 
       {/* Bottom Navigation */}
@@ -75,6 +128,19 @@ export default function HomePage() {
             >
               <Table size={20} className="mb-1" />
               <span className="text-xs font-medium">Tabel</span>
+            </button>
+
+            {/* Status Tab */}
+            <button
+              onClick={() => setActiveTab("status")}
+              className={`flex-1 flex flex-col items-center justify-center py-3 px-2 ${
+                activeTab === "status"
+                  ? "text-blue-600 bg-blue-50"
+                  : "text-gray-600 hover:text-gray-800"
+              }`}
+            >
+              <Shield size={20} className="mb-1" />
+              <span className="text-xs font-medium">Status</span>
             </button>
           </div>
         </div>
