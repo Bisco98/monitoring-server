@@ -81,8 +81,14 @@ export default function Status({ sensorData, config }) {
     }
   };
 
-  const handleAlarmClick = () => {
+  const handleAlarmClick = async () => {
     console.log("tombol di klik");
+    const updates = {
+      "alarm/status": "off", // Update this path based on your Firebase structure
+      "alarm/source": "web", // Optional: specify the source of the alarm
+    };
+
+    await update(ref(database), updates);
   };
 
   const handleThresholdSubmit = async (e) => {
@@ -259,7 +265,7 @@ export default function Status({ sensorData, config }) {
         <div className="pt-2">
           <button
             onClick={handleAlarmClick}
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 cursor-pointer"
           >
             Matikan Alarm
           </button>
